@@ -67,6 +67,10 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
 
+        # Skip logging for internal health checks
+        if request.url.path == "/health" and ip == "127.0.0.1":
+            return response
+
         duration_ms = (time.perf_counter() - start) * 1000
 
         if new_session:

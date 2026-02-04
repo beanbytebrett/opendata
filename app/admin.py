@@ -9,6 +9,7 @@ from fastapi.templating import Jinja2Templates
 from pathlib import Path
 
 from app.config import ADMIN_PASSWORD, LOGS_DIR, SUBMISSIONS_DIR
+from app.telemetry import _get_client_ip
 
 router = APIRouter(prefix="/admin")
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
@@ -117,6 +118,7 @@ async def list_submissions(request: Request, form_type: str = ""):
         "request": request,
         "submissions": submissions,
         "form_type": form_type,
+        "client_ip": _get_client_ip(request),
         "is_admin": True,
     })
 
@@ -138,6 +140,7 @@ async def view_submission(request: Request, filename: str):
         "filename": filename,
         "data": data,
         "data_json": json.dumps(data, indent=2, default=str),
+        "client_ip": _get_client_ip(request),
         "is_admin": True,
     })
 
@@ -161,6 +164,7 @@ async def list_logs(request: Request):
         "entries": None,
         "selected_date": None,
         "event_filter": "",
+        "client_ip": _get_client_ip(request),
         "is_admin": True,
     })
 
@@ -197,5 +201,6 @@ async def view_log(request: Request, date: str, event: str = ""):
         "entries": entries,
         "selected_date": date,
         "event_filter": event,
+        "client_ip": _get_client_ip(request),
         "is_admin": True,
     })

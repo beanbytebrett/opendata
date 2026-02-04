@@ -7,6 +7,7 @@
     <div class="nav-links">
         <a href="/admin/submissions">Submissions</a>
         <a href="/admin/logs">Logs</a>
+        <span style="color:#555;font-size:0.8rem;font-family:monospace;">{{ client_ip }}</span>
         <a href="/admin/logout">Logout</a>
     </div>
 </nav>
@@ -38,7 +39,12 @@
                     <a href="/admin/logs/{{ selected_date }}?event=beacon" class="btn {% if event_filter == 'beacon' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">Beacons</a>
                 </div>
 
-                <p style="color:#666;font-size:0.8rem;margin-bottom:12px;">{{ entries | length }} entries</p>
+                <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
+                    <p style="color:#666;font-size:0.8rem;margin:0;" id="entryCount">{{ entries | length }} entries</p>
+                    <label style="color:#666;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                        <input type="checkbox" id="hideMyIp" style="cursor:pointer;"> Hide my IP <span style="font-family:monospace;">({{ client_ip }})</span>
+                    </label>
+                </div>
 
                 {% if entries %}
                 <div style="overflow-x:auto;">
@@ -53,7 +59,7 @@
                         </thead>
                         <tbody>
                             {% for e in entries %}
-                            <tr style="border-bottom:1px solid #1a1a1a;">
+                            <tr data-ip="{{ e.ip | default('') }}" style="border-bottom:1px solid #1a1a1a;cursor:pointer;" onclick="var d=this.nextElementSibling;d.style.display=d.style.display==='none'?'table-row':'none'">
                                 <td style="padding:8px 10px;font-size:0.8rem;color:#aaa;white-space:nowrap;font-family:monospace;">{{ e.iso[11:19] if e.iso else '' }}</td>
                                 <td style="padding:8px 10px;font-size:0.8rem;"><span style="background:#1a1a1a;border:1px solid #333;border-radius:4px;padding:2px 8px;font-size:0.75rem;color:#60a5fa;">{{ e.event }}</span></td>
                                 <td style="padding:8px 10px;font-size:0.8rem;color:#666;font-family:monospace;">{{ e.ip | default('') }}</td>
@@ -71,6 +77,9 @@
                                     {% endif %}
                                 </td>
                             </tr>
+                            <tr style="display:none;">
+                                <td colspan="4" style="padding:0 10px 12px;"><pre style="background:#111;border:1px solid #222;border-radius:6px;padding:16px;overflow-x:auto;font-size:0.8rem;color:#aaa;line-height:1.5;margin:4px 0 0;">{{ e | tojson(indent=2) }}</pre></td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -86,4 +95,23 @@
 {% endblock %}
 
 {% block footer %}{% endblock %}
-{% block scripts %}{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+    var cb=document.getElementById('hideMyIp');
+    if(!cb)return;
+    var myIp='{{ client_ip }}';
+    cb.addEventListener('change',function(){
+        var rows=document.querySelectorAll('tr[data-ip]');
+        var visible=0;
+        rows.forEach(function(r){
+            var hide=cb.checked&&r.getAttribute('data-ip')===myIp;
+            r.style.display=hide?'none':'';
+            r.nextElementSibling.style.display='none';
+            if(!hide)visible++;
+        });
+        document.getElementById('entryCount').textContent=visible+' entries';
+    });
+})();
+</script>
+{% endblock %}
