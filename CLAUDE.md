@@ -74,6 +74,11 @@ Stored in `.env` (git-ignored). See `.env` for current values:
 | `DOKPLOY_API_KEY` | Dokploy API authentication token |
 | `DOKPLOY_HOST` | Dokploy instance URL |
 | `DOMAIN` | Production domain |
+| `SLACK_WEBHOOK_URL` | Slack incoming webhook for form submission notifications |
+| `SLACK_CLIENT_ID` | Slack app client ID |
+| `SLACK_CLIENT_SECRET` | Slack app client secret |
+| `SLACK_SIGNING_SECRET` | Slack app signing secret |
+| `SLACK_VERIFICATION_TOKEN` | Slack app verification token |
 
 ### GitHub Secrets
 

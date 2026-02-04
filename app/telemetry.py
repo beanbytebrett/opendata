@@ -1,10 +1,15 @@
 import json
+import os
+import threading
 import time
+import urllib.request
 import uuid
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+
+_SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL", "")
 
 # 1x1 transparent GIF
 _PIXEL = (
@@ -81,6 +86,27 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
         return response
 
 
+def _notify_slack(form_name: str, ip: str, fields: dict) -> None:
+    if not _SLACK_WEBHOOK_URL:
+        return
+    try:
+        lines = [f"*New {form_name} submission*", f"IP: `{ip}`"]
+        for k, v in fields.items():
+            if v:
+                label = k.replace("_", " ").title()
+                val = ", ".join(v) if isinstance(v, list) else v
+                lines.append(f"*{label}:* {val}")
+        payload = json.dumps({"text": "\n".join(lines)}).encode()
+        req = urllib.request.Request(
+            _SLACK_WEBHOOK_URL,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        urllib.request.urlopen(req, timeout=5)
+    except Exception as e:
+        emit_event("slack_error", {"error": str(e)})
+
+
 def log_form_submission(request: Request, form_name: str, fields: dict) -> None:
     emit_event(
         "form_submission",
@@ -94,6 +120,11 @@ def log_form_submission(request: Request, form_name: str, fields: dict) -> None:
             "fields": fields,
         },
     )
+    threading.Thread(
+        target=_notify_slack,
+        args=(form_name, request.state.ip, fields),
+        daemon=True,
+    ).start()
 
 
 async def handle_beacon(request: Request) -> Response:
