@@ -8,7 +8,9 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-from app.config import SLACK_WEBHOOK_URL
+from pathlib import Path
+
+from app.config import SLACK_WEBHOOK_URL, SUBMISSIONS_DIR
 
 # 1x1 transparent GIF
 _PIXEL = (
@@ -106,19 +108,33 @@ def _notify_slack(form_name: str, ip: str, fields: dict) -> None:
         emit_event("slack_error", {"error": str(e)})
 
 
+def _save_submission(form_name: str, record: dict) -> None:
+    try:
+        SUBMISSIONS_DIR.mkdir(parents=True, exist_ok=True)
+        ts = time.strftime("%Y%m%d_%H%M%S", time.gmtime())
+        filename = f"{form_name}_{ts}_{uuid.uuid4().hex[:8]}.json"
+        path = SUBMISSIONS_DIR / filename
+        path.write_text(json.dumps(record, indent=2, default=str))
+    except Exception as e:
+        emit_event("save_error", {"error": str(e)})
+
+
 def log_form_submission(request: Request, form_name: str, fields: dict) -> None:
-    emit_event(
-        "form_submission",
-        {
-            "sid": request.state.sid,
-            "ip": request.state.ip,
-            "form": form_name,
-            "path": request.url.path,
-            "user_agent": request.headers.get("user-agent", ""),
-            "referer": request.headers.get("referer", ""),
-            "fields": fields,
-        },
-    )
+    record = {
+        "sid": request.state.sid,
+        "ip": request.state.ip,
+        "form": form_name,
+        "path": request.url.path,
+        "user_agent": request.headers.get("user-agent", ""),
+        "referer": request.headers.get("referer", ""),
+        "fields": fields,
+    }
+    emit_event("form_submission", record)
+    _save_submission(form_name, {
+        "ts": time.time(),
+        "iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        **record,
+    })
     threading.Thread(
         target=_notify_slack,
         args=(form_name, request.state.ip, fields),

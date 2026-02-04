@@ -5,3 +5,4 @@ __pycache__/
 .docker-data/
 data/private/*
 !data/private/.gitkeep
+data/submissions/
