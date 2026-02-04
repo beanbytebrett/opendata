@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Takedown Request - OpenData Exchange{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container form-container">
+        {% if success %}
+        <div class="success-message">
+            <h2>Request Received</h2>
+            <p>Your takedown request has been submitted successfully. We will verify your identity and process the request within 30 business days.</p>
+            <span class="ref-id">Ref: {{ reference_id }}</span>
+        </div>
+        {% else %}
+        <h1>Data Takedown Request</h1>
+        <p>To process your data removal request, we need to verify your identity. Please provide the following information. All fields marked with * are required.</p>
+
+        <form method="POST" action="/takedown">
+            <h3>Personal Information</h3>
+
+            <label for="full_name">Full Legal Name *</label>
+            <input type="text" id="full_name" name="full_name" required>
+
+            <label for="email">Email Address *</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" name="phone">
+
+            <label for="date_of_birth">Date of Birth *</label>
+            <input type="date" id="date_of_birth" name="date_of_birth" required>
+
+            <h3>Address Information</h3>
+
+            <label for="street_address">Street Address *</label>
+            <input type="text" id="street_address" name="street_address" required>
+
+            <label for="city">City *</label>
+            <input type="text" id="city" name="city" required>
+
+            <label for="state">State / Province *</label>
+            <input type="text" id="state" name="state" required>
+
+            <label for="zip_code">ZIP / Postal Code *</label>
+            <input type="text" id="zip_code" name="zip_code" required>
+
+            <label for="country">Country *</label>
+            <input type="text" id="country" name="country" required>
+
+            <h3>Identity Verification</h3>
+            <p class="text-muted">Required to confirm ownership of the data records. This information is used solely for verification purposes.</p>
+
+            <label for="ssn_last4">Last 4 Digits of SSN (US residents)</label>
+            <input type="text" id="ssn_last4" name="ssn_last4" maxlength="4" pattern="\d{4}" placeholder="0000">
+
+            <label for="gov_id">Government ID Number (non-US residents)</label>
+            <input type="text" id="gov_id" name="gov_id">
+
+            <h3>Request Details</h3>
+
+            <label for="data_description">What data would you like removed? *</label>
+            <textarea id="data_description" name="data_description" rows="4" required placeholder="Describe what personal data you believe we hold and would like removed..."></textarea>
+
+            <label for="discovery_method">How did you learn your data is in our system?</label>
+            <textarea id="discovery_method" name="discovery_method" rows="3" placeholder="e.g., search results, notification from a third party, data breach alert..."></textarea>
+
+            <label for="comments">Additional Comments</label>
+            <textarea id="comments" name="comments" rows="3"></textarea>
+
+            <button type="submit" class="btn btn-primary">Submit Takedown Request</button>
+        </form>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

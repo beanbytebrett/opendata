@@ -1,15 +1,89 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Open Data</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-    <main>
-        <h1>Open Data</h1>
-        <p>is under construction</p>
-    </main>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}OpenData Exchange - Enterprise Data Solutions{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container">
+        <h1>Powering Decisions with Data</h1>
+        <p class="hero-subtitle">OpenData Exchange provides curated, verified datasets for enterprises, researchers, and developers.</p>
+        <div class="hero-actions">
+            <a href="/brokers" class="btn btn-primary">Explore Datasets</a>
+            <a href="/api-access" class="btn btn-secondary">Get API Access</a>
+        </div>
+    </div>
+</section>
+
+<section class="section section-alt">
+    <div class="container">
+        <h2 class="section-title">Our Data Solutions</h2>
+        <div class="card-grid">
+            <div class="card">
+                <h3>Consumer Intelligence</h3>
+                <p>Behavioral analytics, purchase patterns, and demographic profiles sourced from verified data partners. Enriched and deduplicated for accuracy.</p>
+            </div>
+            <div class="card">
+                <h3>Business Data</h3>
+                <p>Company records, financial filings, market intelligence, and firmographic data covering millions of organizations worldwide.</p>
+            </div>
+            <div class="card">
+                <h3>Identity Resolution</h3>
+                <p>Cross-reference datasets for identity verification and record linkage. Match, merge, and resolve entities across disparate sources.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <h2 class="section-title">By the Numbers</h2>
+        <div class="stats-row">
+            <div class="stat-item">
+                <h3>500M+</h3>
+                <p>Records Available</p>
+            </div>
+            <div class="stat-item">
+                <h3>200+</h3>
+                <p>Data Partners</p>
+            </div>
+            <div class="stat-item">
+                <h3>99.9%</h3>
+                <p>API Uptime</p>
+            </div>
+            <div class="stat-item">
+                <h3>SOC 2</h3>
+                <p>Compliant</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section section-alt">
+    <div class="container">
+        <h2 class="section-title">How It Works</h2>
+        <div class="card-grid">
+            <div class="card">
+                <h3>1. Browse Our Catalog</h3>
+                <p>Explore our curated collection of datasets across consumer, business, and identity categories. Filter by industry, geography, or data type.</p>
+            </div>
+            <div class="card">
+                <h3>2. Request Access</h3>
+                <p>Submit an inquiry for data partnerships or request an API key. Our team reviews applications and provisions access within 48 hours.</p>
+            </div>
+            <div class="card">
+                <h3>3. Integrate and Scale</h3>
+                <p>Access data through our REST API or bulk exports. Comprehensive documentation, sandbox environments, and dedicated support included.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="container">
+        <h2>Ready to get started?</h2>
+        <div class="cta-actions">
+            <a href="/brokers" class="btn btn-primary">Partner With Us</a>
+            <a href="/api-access" class="btn btn-secondary">Request API Access</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
