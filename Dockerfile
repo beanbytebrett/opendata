@@ -10,8 +10,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app/ app/
 
-RUN mkdir -p data/submissions data/logs
-VOLUME ["/app/data/submissions", "/app/data/logs"]
+RUN mkdir -p data/submissions data/logs data/public
+VOLUME ["/app/data/submissions", "/app/data/logs", "/app/data/public"]
 
 EXPOSE 8000
 

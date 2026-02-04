@@ -7,3 +7,4 @@ data/private/*
 !data/private/.gitkeep
 data/submissions/
 data/logs/
+data/public/*.parquet

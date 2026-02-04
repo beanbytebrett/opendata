@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from uuid import uuid4
 
@@ -23,37 +24,94 @@ templates = Jinja2Templates(directory=base_dir / "templates")
 app.add_middleware(TelemetryMiddleware)
 
 
-# ---- Dataset helpers ----
+# ---- Dataset store ----
 
-def _scan_datasets() -> dict:
-    datasets = {}
-    if not public_data_dir.exists():
-        return datasets
-    for f in sorted(public_data_dir.glob("*.parquet")):
-        try:
-            pf = pq.ParquetFile(f)
-            schema = pf.schema_arrow
-            datasets[f.stem] = {
-                "name": f.stem,
-                "file": f,
-                "num_rows": pf.metadata.num_rows,
-                "columns": [
-                    {"name": field.name, "type": str(field.type)}
-                    for field in schema
-                ],
-            }
-        except Exception:
-            continue
-    return datasets
+class DatasetStore:
+    """Manages Parquet datasets with mtime-based refresh."""
+
+    def __init__(self, data_dir: Path):
+        self._dir = data_dir
+        self._meta: dict[str, dict] = {}
+        self._data: dict[str, list[dict]] = {}
+        self._index: dict[str, dict[str, dict]] = {}
+
+    def scan(self) -> dict[str, dict]:
+        """Re-scan directory, reload metadata for changed files."""
+        current_files = {}
+        if self._dir.exists():
+            for f in sorted(self._dir.glob("*.parquet")):
+                current_files[f.stem] = f
+
+        # Remove datasets whose files are gone
+        for name in list(self._meta.keys()):
+            if name not in current_files:
+                self._meta.pop(name, None)
+                self._data.pop(name, None)
+                self._index.pop(name, None)
+
+        # Add/update metadata for each file
+        for name, f in current_files.items():
+            mtime = os.path.getmtime(f)
+            existing = self._meta.get(name)
+            if existing and existing["mtime"] == mtime:
+                continue
+            try:
+                pf = pq.ParquetFile(f)
+                schema = pf.schema_arrow
+                self._meta[name] = {
+                    "name": name,
+                    "file": f,
+                    "mtime": mtime,
+                    "num_rows": pf.metadata.num_rows,
+                    "columns": [
+                        {"name": field.name, "type": str(field.type)}
+                        for field in schema
+                    ],
+                }
+                # Invalidate cached data so it reloads on next access
+                self._data.pop(name, None)
+                self._index.pop(name, None)
+            except Exception:
+                continue
+        return self._meta
+
+    def get_meta(self, name: str) -> dict | None:
+        self.scan()
+        return self._meta.get(name)
+
+    def get_records(self, name: str) -> list[dict] | None:
+        meta = self.get_meta(name)
+        if not meta:
+            return None
+        if name not in self._data:
+            table = pq.read_table(meta["file"])
+            cols = table.column_names
+            rows = table.to_pydict()
+            self._data[name] = [
+                {col: rows[col][i] for col in cols}
+                for i in range(table.num_rows)
+            ]
+            self._index[name] = {}
+            for row in self._data[name]:
+                row_id = row.get("id")
+                if row_id is not None:
+                    self._index[name][str(row_id)] = row
+        return self._data[name]
+
+    def get_record_by_id(self, name: str, record_id: str) -> dict | None:
+        self.get_records(name)
+        idx = self._index.get(name)
+        if idx is None:
+            return None
+        return idx.get(record_id)
 
 
-_datasets: dict = {}
+datasets = DatasetStore(public_data_dir)
 
 
 @app.on_event("startup")
 async def _load_datasets():
-    global _datasets
-    _datasets = _scan_datasets()
+    datasets.scan()
 
 
 # ---- Page routes ----
@@ -189,55 +247,59 @@ async def beacon(request: Request):
 
 @app.get("/api/v1/datasets")
 async def list_datasets():
+    datasets.scan()
     return [
         {
             "name": ds["name"],
             "num_rows": ds["num_rows"],
             "columns": ds["columns"],
         }
-        for ds in _datasets.values()
+        for ds in datasets._meta.values()
     ]
 
 
 @app.get("/api/v1/datasets/{name}")
 async def get_dataset(name: str):
-    ds = _datasets.get(name)
-    if not ds:
+    meta = datasets.get_meta(name)
+    if not meta:
         return JSONResponse({"error": "Dataset not found"}, status_code=404)
     return {
-        "name": ds["name"],
-        "num_rows": ds["num_rows"],
-        "columns": ds["columns"],
+        "name": meta["name"],
+        "num_rows": meta["num_rows"],
+        "columns": meta["columns"],
     }
 
 
 @app.get("/api/v1/datasets/{name}/records")
 async def get_dataset_records(name: str, limit: int = 100, offset: int = 0):
-    ds = _datasets.get(name)
-    if not ds:
+    records = datasets.get_records(name)
+    if records is None:
         return JSONResponse({"error": "Dataset not found"}, status_code=404)
 
     limit = max(1, min(limit, 1000))
     offset = max(0, offset)
-
-    table = pq.read_table(ds["file"])
-    total = table.num_rows
-
-    sliced = table.slice(offset, limit)
-    records = sliced.to_pydict()
-    rows = [
-        {col: records[col][i] for col in records}
-        for i in range(sliced.num_rows)
-    ]
+    total = len(records)
+    sliced = records[offset:offset + limit]
 
     return {
         "name": name,
         "total": total,
         "offset": offset,
         "limit": limit,
-        "count": len(rows),
-        "records": rows,
+        "count": len(sliced),
+        "records": sliced,
     }
+
+
+@app.get("/api/v1/datasets/{name}/records/{record_id}")
+async def get_dataset_record(name: str, record_id: str):
+    record = datasets.get_record_by_id(name, record_id)
+    if record is None:
+        meta = datasets.get_meta(name)
+        if not meta:
+            return JSONResponse({"error": "Dataset not found"}, status_code=404)
+        return JSONResponse({"error": "Record not found"}, status_code=404)
+    return {"name": name, "record": record}
 
 
 # ---- Health check ----

@@ -14,29 +14,50 @@ Open data project. Repository: https://github.com/beanbytebrett/opendata
 
 ```
 opendata/
-├── app/
-│   ├── main.py           # FastAPI application
-│   ├── static/           # CSS, JS, assets
-│   └── templates/        # Jinja2 HTML templates
+├── app/                    # FastAPI server (deployed via Docker)
+│   ├── main.py
+│   ├── config.py
+│   ├── admin.py
+│   ├── telemetry.py
+│   ├── static/
+│   └── templates/
+├── crawlers/               # Data crawlers (NOT in Docker image)
+│   ├── base.py             # BaseCrawler ABC
+│   ├── conditions.py       # Done condition classes
+│   ├── runner.py           # CLI: python -m crawlers.runner <name>
+│   ├── requirements.txt    # Crawler-only dependencies
+│   └── sources/
+│       └── congress_contacts.py
+├── data/
+│   └── public/             # Parquet files served by API (git-ignored)
 ├── .github/workflows/
-│   └── deploy.yml        # Dokploy webhook on push to main
+│   └── deploy.yml          # Dokploy webhook on push to main
 ├── Dockerfile
-└── requirements.txt
+├── .dockerignore
+└── requirements.txt        # Server dependencies only
 ```
 
 ## Development
 
 ```bash
-# Local dev (requires Python 3.13+)
+# Server (requires Python 3.13+)
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 
-# Docker
+# Crawlers (can run from NAS, server, or local)
+pip install -r crawlers/requirements.txt
+python -m crawlers.runner congress_contacts --output-dir ./data/public
+
+# SCP dataset to server
+scp data/public/congress_contacts.parquet user@212.1.213.176:/app/data/public/
+
+# Docker (server only, crawlers excluded)
 docker build -t opendata .
 docker run -p 8000:8000 opendata
 ```
 
 The site runs on port 8000. Health check at `/health`.
+The server auto-detects new/updated Parquet files in `data/public/` without restart.
 
 ## Git Configuration
 

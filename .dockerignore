@@ -1,0 +1,10 @@
+.venv/
+.env
+.git/
+.github/
+crawlers/
+data/
+__pycache__/
+*.pyc
+CLAUDE.md
+README.md
