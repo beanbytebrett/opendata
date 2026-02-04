@@ -7,9 +7,11 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from app.admin import router as admin_router
 from app.telemetry import TelemetryMiddleware, handle_beacon, log_form_submission
 
 app = FastAPI(title="OpenData Exchange", docs_url=None, redoc_url=None)
+app.include_router(admin_router)
 
 base_dir = Path(__file__).parent
 data_dir = base_dir.parent / "data"

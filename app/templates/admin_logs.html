@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Logs - Admin{% endblock %}
+
+{% block nav %}
+<nav class="container nav">
+    <a href="/admin/submissions" class="logo">Admin</a>
+    <div class="nav-links">
+        <a href="/admin/submissions">Submissions</a>
+        <a href="/admin/logs">Logs</a>
+        <a href="/admin/logout">Logout</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 style="font-size:1.6rem;font-weight:400;color:#fff;margin-bottom:24px;">Request Logs</h1>
+
+        <div style="display:flex;gap:32px;align-items:flex-start;">
+            <div style="min-width:160px;">
+                <h3 style="font-size:0.8rem;color:#666;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Dates</h3>
+                {% for d in dates %}
+                <a href="/admin/logs/{{ d }}" style="display:block;padding:6px 0;font-size:0.85rem;{% if d == selected_date %}color:#2563eb;font-weight:500;{% else %}color:#888;{% endif %}">{{ d }}</a>
+                {% endfor %}
+                {% if not dates %}
+                <p style="color:#666;font-size:0.85rem;">No logs yet.</p>
+                {% endif %}
+            </div>
+
+            {% if entries is not none %}
+            <div style="flex:1;min-width:0;">
+                <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
+                    <a href="/admin/logs/{{ selected_date }}" class="btn {% if not event_filter %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">All</a>
+                    <a href="/admin/logs/{{ selected_date }}?event=request" class="btn {% if event_filter == 'request' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">Requests</a>
+                    <a href="/admin/logs/{{ selected_date }}?event=session_start" class="btn {% if event_filter == 'session_start' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">Sessions</a>
+                    <a href="/admin/logs/{{ selected_date }}?event=form_submission" class="btn {% if event_filter == 'form_submission' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">Forms</a>
+                    <a href="/admin/logs/{{ selected_date }}?event=beacon" class="btn {% if event_filter == 'beacon' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">Beacons</a>
+                </div>
+
+                <p style="color:#666;font-size:0.8rem;margin-bottom:12px;">{{ entries | length }} entries</p>
+
+                {% if entries %}
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;">
+                        <thead>
+                            <tr style="border-bottom:1px solid #333;text-align:left;">
+                                <th style="padding:8px 10px;color:#888;font-size:0.75rem;font-weight:500;">Time</th>
+                                <th style="padding:8px 10px;color:#888;font-size:0.75rem;font-weight:500;">Event</th>
+                                <th style="padding:8px 10px;color:#888;font-size:0.75rem;font-weight:500;">IP</th>
+                                <th style="padding:8px 10px;color:#888;font-size:0.75rem;font-weight:500;">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for e in entries %}
+                            <tr style="border-bottom:1px solid #1a1a1a;">
+                                <td style="padding:8px 10px;font-size:0.8rem;color:#aaa;white-space:nowrap;font-family:monospace;">{{ e.iso[11:19] if e.iso else '' }}</td>
+                                <td style="padding:8px 10px;font-size:0.8rem;"><span style="background:#1a1a1a;border:1px solid #333;border-radius:4px;padding:2px 8px;font-size:0.75rem;color:#60a5fa;">{{ e.event }}</span></td>
+                                <td style="padding:8px 10px;font-size:0.8rem;color:#666;font-family:monospace;">{{ e.ip | default('') }}</td>
+                                <td style="padding:8px 10px;font-size:0.8rem;color:#aaa;">
+                                    {% if e.event == 'request' %}
+                                        <span style="color:#e0e0e0;">{{ e.method }} {{ e.path }}</span> <span style="color:#666;">{{ e.status }} &middot; {{ e.duration_ms }}ms</span>
+                                    {% elif e.event == 'form_submission' %}
+                                        <span style="color:#e0e0e0;">{{ e.form }}</span> <span style="color:#666;">&middot; {{ e.fields.full_name or e.fields.contact_name or '' }}</span>
+                                    {% elif e.event == 'session_start' %}
+                                        <span style="color:#666;">sid: {{ e.sid[:12] }}...</span>
+                                    {% elif e.event == 'beacon' %}
+                                        <span style="color:#666;">{{ e.payload.t | default('') }}</span>
+                                    {% else %}
+                                        <span style="color:#666;">{{ e | tojson | truncate(80) }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p style="color:#666;font-size:0.85rem;">No entries match the filter.</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+{% block scripts %}{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ filename }} - Admin{% endblock %}
+
+{% block nav %}
+<nav class="container nav">
+    <a href="/admin/submissions" class="logo">Admin</a>
+    <div class="nav-links">
+        <a href="/admin/submissions">Submissions</a>
+        <a href="/admin/logs">Logs</a>
+        <a href="/admin/logout">Logout</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container" style="max-width:800px;">
+        <a href="/admin/submissions" style="color:#666;font-size:0.85rem;">&larr; Back to submissions</a>
+        <h1 style="font-size:1.4rem;font-weight:400;color:#fff;margin:16px 0 8px;">{{ data.form }} submission</h1>
+        <p style="color:#666;font-size:0.85rem;margin-bottom:24px;">{{ data.iso }} &middot; {{ data.ip }} &middot; {{ filename }}</p>
+
+        {% if data.fields %}
+        <table style="width:100%;border-collapse:collapse;margin-bottom:32px;">
+            {% for key, value in data.fields.items() %}
+            {% if value %}
+            <tr style="border-bottom:1px solid #1a1a1a;">
+                <td style="padding:10px 12px;color:#888;font-size:0.85rem;font-weight:500;width:180px;vertical-align:top;">{{ key.replace('_', ' ').title() }}</td>
+                <td style="padding:10px 12px;color:#e0e0e0;font-size:0.85rem;">{% if value is iterable and value is not string %}{{ value | join(', ') }}{% else %}{{ value }}{% endif %}</td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </table>
+        {% endif %}
+
+        <details>
+            <summary style="color:#666;font-size:0.85rem;cursor:pointer;margin-bottom:8px;">Raw JSON</summary>
+            <pre style="background:#111;border:1px solid #222;border-radius:6px;padding:16px;overflow-x:auto;font-size:0.8rem;color:#aaa;line-height:1.5;">{{ data_json }}</pre>
+        </details>
+    </div>
+</section>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+{% block scripts %}{% endblock %}

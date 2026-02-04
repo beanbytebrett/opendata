@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Admin Login - OpenData Exchange{% endblock %}
+
+{% block nav %}
+<nav class="container nav">
+    <a href="/" class="logo">OpenData Exchange</a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container form-container">
+        <h1>Admin Login</h1>
+        {% if error %}
+        <p style="color: #ef4444; margin-bottom: 16px;">{{ error }}</p>
+        {% endif %}
+        <form method="POST" action="/admin/login">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required autofocus>
+            <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+{% block scripts %}{% endblock %}

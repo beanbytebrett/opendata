@@ -10,7 +10,7 @@ from starlette.responses import Response
 
 from pathlib import Path
 
-from app.config import SLACK_WEBHOOK_URL, SUBMISSIONS_DIR
+from app.config import LOGS_DIR, SLACK_WEBHOOK_URL, SUBMISSIONS_DIR
 
 # 1x1 transparent GIF
 _PIXEL = (
@@ -20,6 +20,9 @@ _PIXEL = (
 )
 
 
+_log_lock = threading.Lock()
+
+
 def emit_event(event_type: str, data: dict) -> None:
     record = {
         "ts": time.time(),
@@ -27,7 +30,16 @@ def emit_event(event_type: str, data: dict) -> None:
         "event": event_type,
         **data,
     }
-    print(json.dumps(record, default=str), flush=True)
+    line = json.dumps(record, default=str)
+    print(line, flush=True)
+    try:
+        LOGS_DIR.mkdir(parents=True, exist_ok=True)
+        logfile = LOGS_DIR / f"{time.strftime('%Y-%m-%d', time.gmtime())}.jsonl"
+        with _log_lock:
+            with open(logfile, "a") as f:
+                f.write(line + "\n")
+    except Exception:
+        pass
 
 
 def _get_client_ip(request: Request) -> str:

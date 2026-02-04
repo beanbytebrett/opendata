@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Submissions - Admin{% endblock %}
+
+{% block nav %}
+<nav class="container nav">
+    <a href="/admin/submissions" class="logo">Admin</a>
+    <div class="nav-links">
+        <a href="/admin/submissions">Submissions</a>
+        <a href="/admin/logs">Logs</a>
+        <a href="/admin/logout">Logout</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 style="font-size:1.6rem;font-weight:400;color:#fff;margin-bottom:24px;">Form Submissions</h1>
+
+        <div style="margin-bottom:24px;display:flex;gap:8px;">
+            <a href="/admin/submissions" class="btn {% if not form_type %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:8px 16px;font-size:0.85rem;">All</a>
+            <a href="/admin/submissions?form_type=takedown" class="btn {% if form_type == 'takedown' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:8px 16px;font-size:0.85rem;">Takedown</a>
+            <a href="/admin/submissions?form_type=broker_inquiry" class="btn {% if form_type == 'broker_inquiry' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:8px 16px;font-size:0.85rem;">Broker</a>
+            <a href="/admin/submissions?form_type=api_access" class="btn {% if form_type == 'api_access' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:8px 16px;font-size:0.85rem;">API Access</a>
+        </div>
+
+        {% if submissions %}
+        <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr style="border-bottom:1px solid #333;text-align:left;">
+                        <th style="padding:10px 12px;color:#888;font-size:0.8rem;font-weight:500;">Time</th>
+                        <th style="padding:10px 12px;color:#888;font-size:0.8rem;font-weight:500;">Form</th>
+                        <th style="padding:10px 12px;color:#888;font-size:0.8rem;font-weight:500;">Name</th>
+                        <th style="padding:10px 12px;color:#888;font-size:0.8rem;font-weight:500;">Email</th>
+                        <th style="padding:10px 12px;color:#888;font-size:0.8rem;font-weight:500;">IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in submissions %}
+                    <tr style="border-bottom:1px solid #1a1a1a;cursor:pointer;" onclick="window.location='/admin/submissions/{{ s.filename }}'">
+                        <td style="padding:10px 12px;font-size:0.85rem;color:#aaa;white-space:nowrap;">{{ s.iso }}</td>
+                        <td style="padding:10px 12px;font-size:0.85rem;"><span style="background:#1a1a1a;border:1px solid #333;border-radius:4px;padding:2px 8px;font-size:0.8rem;color:#60a5fa;">{{ s.form }}</span></td>
+                        <td style="padding:10px 12px;font-size:0.85rem;color:#e0e0e0;">{{ s.name }}</td>
+                        <td style="padding:10px 12px;font-size:0.85rem;color:#aaa;">{{ s.email }}</td>
+                        <td style="padding:10px 12px;font-size:0.85rem;color:#666;font-family:monospace;">{{ s.ip }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="color:#666;">No submissions found.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+{% block scripts %}{% endblock %}

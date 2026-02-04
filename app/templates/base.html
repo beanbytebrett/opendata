@@ -9,6 +9,7 @@
 </head>
 <body>
     <header>
+        {% block nav %}
         <nav class="container nav">
             <a href="/" class="logo">OpenData Exchange</a>
             <div class="nav-links">
@@ -17,12 +18,14 @@
                 <a href="/takedown">Takedown Request</a>
             </div>
         </nav>
+        {% endblock %}
     </header>
 
     <main>
         {% block content %}{% endblock %}
     </main>
 
+    {% block footer %}
     <footer>
         <div class="container footer-content">
             <div class="footer-section">
@@ -49,7 +52,10 @@
             </div>
         </div>
     </footer>
+    {% endblock %}
 
+    {% block scripts %}
     <script src="/static/a.js" defer></script>
+    {% endblock %}
 </body>
 </html>
