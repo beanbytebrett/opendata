@@ -1,9 +1,10 @@
 """CLI runner for crawlers.
 
-Usage: python -m crawlers.runner <source> [--output-dir DIR]
+Usage: python -m crawlers.runner <source> [--output-dir DIR] [--proxy URL]
 """
 
 import argparse
+import os
 import sys
 import time
 from pathlib import Path
@@ -18,6 +19,15 @@ CRAWLERS = {
 }
 
 
+def _resolve_proxy(args) -> str | None:
+    """Resolve proxy from CLI flag, falling back to env vars."""
+    if args.proxy:
+        return args.proxy
+    if os.environ.get("USE_PROXY", "").lower() == "true":
+        return os.environ.get("PROXY_URL")
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run a crawler and export to Parquet.")
     parser.add_argument("source", choices=sorted(CRAWLERS.keys()), help="Crawler source name")
@@ -26,9 +36,10 @@ def main():
     args = parser.parse_args()
 
     crawler = CRAWLERS[args.source]()
-    if args.proxy:
-        crawler.proxy = args.proxy
-        print(f"[{crawler.name}] Using proxy: {args.proxy}")
+    proxy = _resolve_proxy(args)
+    if proxy:
+        crawler.proxy = proxy
+        print(f"[{crawler.name}] Using proxy: {proxy}")
     print(f"[{crawler.name}] Starting crawl...")
     start = time.time()
 

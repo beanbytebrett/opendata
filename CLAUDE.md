@@ -100,6 +100,8 @@ Stored in `.env` (git-ignored). See `.env` for current values:
 | `SLACK_CLIENT_SECRET` | Slack app client secret |
 | `SLACK_SIGNING_SECRET` | Slack app signing secret |
 | `SLACK_VERIFICATION_TOKEN` | Slack app verification token |
+| `USE_PROXY` | Enable SOCKS proxy for crawlers (`true`/`false`) |
+| `PROXY_URL` | SOCKS proxy URL (e.g. `socks5h://127.0.0.1:9050`) |
 
 ### GitHub Secrets
 
