@@ -1,5 +1,3 @@
-import requests
-
 from crawlers.base import BaseCrawler
 from crawlers.conditions import (
     FieldCompleteness,
@@ -20,8 +18,8 @@ class CongressContactsCrawler(BaseCrawler):
         return "congress_contacts"
 
     def crawl(self):
-        legislators = requests.get(LEGISLATORS_URL, timeout=30).json()
-        social_raw = requests.get(SOCIAL_MEDIA_URL, timeout=30).json()
+        legislators = self.session.get(LEGISLATORS_URL, timeout=30).json()
+        social_raw = self.session.get(SOCIAL_MEDIA_URL, timeout=30).json()
 
         # Index social media by bioguide ID
         social = {}

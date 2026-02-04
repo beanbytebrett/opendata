@@ -22,9 +22,13 @@ def main():
     parser = argparse.ArgumentParser(description="Run a crawler and export to Parquet.")
     parser.add_argument("source", choices=sorted(CRAWLERS.keys()), help="Crawler source name")
     parser.add_argument("--output-dir", default="./data/public", help="Output directory")
+    parser.add_argument("--proxy", default=None, help="SOCKS proxy (e.g. socks5h://127.0.0.1:9050)")
     args = parser.parse_args()
 
     crawler = CRAWLERS[args.source]()
+    if args.proxy:
+        crawler.proxy = args.proxy
+        print(f"[{crawler.name}] Using proxy: {args.proxy}")
     print(f"[{crawler.name}] Starting crawl...")
     start = time.time()
 
