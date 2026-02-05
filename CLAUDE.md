@@ -85,19 +85,42 @@ git config core.sshCommand "ssh -i /Users/brett/code/beanbytebrett/.ssh/id_ed255
 - **Domain**: `opendata.rest`
 - **Deployment**: Push to `main` triggers GitHub Actions webhook to Dokploy
 - **SSL**: Let's Encrypt via Dokploy/Traefik
-- **Volumes**: `docker-compose.yml` defines named volumes for persistent data
+- **Volumes**: Named Docker volumes via Dokploy mounts API
+
+### Dokploy API
+
+When infrastructure changes are needed, use the Dokploy API directly rather than manual UI configuration. The API key is in `.env` (`DOKPLOY_API_KEY`).
+
+**Authentication**: Use `x-api-key` header:
+```bash
+source .env
+curl -H "x-api-key: $DOKPLOY_API_KEY" "$DOKPLOY_HOST/api/project.all"
+```
+
+**Key endpoints**:
+- `GET /api/project.all` — list projects and applications
+- `GET /api/application.one?applicationId=ID` — get application details including mounts
+- `POST /api/mounts.create` — add persistent volume mount
+- `POST /api/application.deploy` — trigger redeploy
+
+**Application ID**: `JixqSRshDKzQX7Eo1bed2`
 
 ### Persistent Volumes
 
-Data persists across deployments via named Docker volumes defined in `docker-compose.yml`:
+Data persists across deployments via named Docker volumes configured through Dokploy's mounts API:
 
-| Volume | Path | Contents |
-|--------|------|----------|
-| `submissions` | `/app/data/submissions` | Form submission JSON files |
-| `logs` | `/app/data/logs` | Request/event JSONL logs |
-| `public` | `/app/data/public` | Parquet datasets served by API |
+| Volume Name | Mount Path | Contents |
+|-------------|------------|----------|
+| `opendata-submissions` | `/app/data/submissions` | Form submission JSON files |
+| `opendata-logs` | `/app/data/logs` | Request/event JSONL logs |
+| `opendata-public` | `/app/data/public` | Parquet datasets served by API |
 
-Dokploy should be configured to use docker-compose for deployment to ensure volumes persist.
+To add a volume mount via API:
+```bash
+curl -X POST -H "x-api-key: $DOKPLOY_API_KEY" -H "Content-Type: application/json" \
+  "$DOKPLOY_HOST/api/mounts.create" \
+  -d '{"type":"volume","mountPath":"/app/data/example","serviceId":"JixqSRshDKzQX7Eo1bed2","volumeName":"opendata-example","serviceType":"application"}'
+```
 
 ### Environment Variables
 

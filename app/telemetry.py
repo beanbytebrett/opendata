@@ -51,6 +51,9 @@ def _get_client_ip(request: Request) -> str:
     return "unknown"
 
 
+_MAX_BODY_LOG = 10000  # Max bytes to log for POST bodies
+
+
 class TelemetryMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start = time.perf_counter()
@@ -64,6 +67,18 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
 
         request.state.sid = sid
         request.state.ip = ip
+
+        # Capture POST/PUT/PATCH body for logging
+        body_text = None
+        if request.method in ("POST", "PUT", "PATCH"):
+            try:
+                body_bytes = await request.body()
+                if body_bytes:
+                    body_text = body_bytes[:_MAX_BODY_LOG].decode("utf-8", errors="replace")
+                    if len(body_bytes) > _MAX_BODY_LOG:
+                        body_text += f"... [truncated, {len(body_bytes)} bytes total]"
+            except Exception:
+                body_text = "[error reading body]"
 
         response = await call_next(request)
 
@@ -84,21 +99,22 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
             )
             emit_event("session_start", {"sid": sid, "ip": ip})
 
-        emit_event(
-            "request",
-            {
-                "sid": sid,
-                "ip": ip,
-                "method": request.method,
-                "path": request.url.path,
-                "query": str(request.url.query),
-                "status": response.status_code,
-                "duration_ms": round(duration_ms, 2),
-                "user_agent": request.headers.get("user-agent", ""),
-                "referer": request.headers.get("referer", ""),
-                "accept_language": request.headers.get("accept-language", ""),
-            },
-        )
+        event_data = {
+            "sid": sid,
+            "ip": ip,
+            "method": request.method,
+            "path": request.url.path,
+            "query": str(request.url.query),
+            "status": response.status_code,
+            "duration_ms": round(duration_ms, 2),
+            "user_agent": request.headers.get("user-agent", ""),
+            "referer": request.headers.get("referer", ""),
+            "accept_language": request.headers.get("accept-language", ""),
+        }
+        if body_text:
+            event_data["body"] = body_text
+
+        emit_event("request", event_data)
 
         return response
 
