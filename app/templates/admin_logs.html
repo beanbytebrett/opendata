@@ -39,10 +39,18 @@
                     <a href="/admin/logs/{{ selected_date }}?event=beacon" class="btn {% if event_filter == 'beacon' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">Beacons</a>
                 </div>
 
-                <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
-                    <p style="color:#666;font-size:0.8rem;margin:0;" id="entryCount">{{ entries | length }} entries</p>
+                <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
+                    <p style="color:#666;font-size:0.8rem;margin:0;" id="entryCount">{{ total }} entries</p>
                     <label style="color:#666;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;">
                         <input type="checkbox" id="hideMyIp" style="cursor:pointer;"> Hide my IP <span style="font-family:monospace;">({{ client_ip }})</span>
+                    </label>
+                    <label style="color:#666;font-size:0.8rem;display:flex;align-items:center;gap:6px;">
+                        Per page
+                        <select id="perPage" style="background:#111;color:#aaa;border:1px solid #333;border-radius:4px;padding:3px 6px;font-size:0.8rem;cursor:pointer;">
+                            {% for n in [25, 50, 100, 250] %}
+                            <option value="{{ n }}" {% if n == per_page %}selected{% endif %}>{{ n }}</option>
+                            {% endfor %}
+                        </select>
                     </label>
                 </div>
 
@@ -51,9 +59,11 @@
                     <table style="width:100%;border-collapse:collapse;">
                         <thead>
                             <tr style="border-bottom:1px solid #333;text-align:left;">
-                                <th style="padding:8px 10px;color:#888;font-size:0.75rem;font-weight:500;">Time</th>
-                                <th style="padding:8px 10px;color:#888;font-size:0.75rem;font-weight:500;">Event</th>
-                                <th style="padding:8px 10px;color:#888;font-size:0.75rem;font-weight:500;">IP</th>
+                                {% for col, field in [('Time', 'ts'), ('Event', 'event'), ('IP', 'ip')] %}
+                                <th style="padding:8px 10px;color:#888;font-size:0.75rem;font-weight:500;cursor:pointer;user-select:none;white-space:nowrap;" onclick="sortBy('{{ field }}')">
+                                    {{ col }}{% if sort == field %} {{ '▲' if order == 'asc' else '▼' }}{% endif %}
+                                </th>
+                                {% endfor %}
                                 <th style="padding:8px 10px;color:#888;font-size:0.75rem;font-weight:500;">Details</th>
                             </tr>
                         </thead>
@@ -84,6 +94,19 @@
                         </tbody>
                     </table>
                 </div>
+
+                {% if total_pages > 1 %}
+                <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px;">
+                    {% if page > 1 %}
+                    <a href="{{ paginate_url(page - 1) }}" class="btn btn-secondary" style="padding:6px 12px;font-size:0.8rem;">← Prev</a>
+                    {% endif %}
+                    <span style="color:#666;font-size:0.8rem;">Page {{ page }} of {{ total_pages }}</span>
+                    {% if page < total_pages %}
+                    <a href="{{ paginate_url(page + 1) }}" class="btn btn-secondary" style="padding:6px 12px;font-size:0.8rem;">Next →</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+
                 {% else %}
                 <p style="color:#666;font-size:0.85rem;">No entries match the filter.</p>
                 {% endif %}
@@ -99,19 +122,40 @@
 <script>
 (function(){
     var cb=document.getElementById('hideMyIp');
-    if(!cb)return;
-    var myIp='{{ client_ip }}';
-    cb.addEventListener('change',function(){
-        var rows=document.querySelectorAll('tr[data-ip]');
-        var visible=0;
-        rows.forEach(function(r){
-            var hide=cb.checked&&r.getAttribute('data-ip')===myIp;
-            r.style.display=hide?'none':'';
-            r.nextElementSibling.style.display='none';
-            if(!hide)visible++;
+    if(cb){
+        var myIp='{{ client_ip }}';
+        cb.addEventListener('change',function(){
+            var rows=document.querySelectorAll('tr[data-ip]');
+            var visible=0;
+            rows.forEach(function(r){
+                var hide=cb.checked&&r.getAttribute('data-ip')===myIp;
+                r.style.display=hide?'none':'';
+                r.nextElementSibling.style.display='none';
+                if(!hide)visible++;
+            });
+            document.getElementById('entryCount').textContent=visible+' of {{ total }} entries';
         });
-        document.getElementById('entryCount').textContent=visible+' entries';
-    });
+    }
+    var pp=document.getElementById('perPage');
+    if(pp){
+        pp.addEventListener('change',function(){
+            var params=new URLSearchParams(window.location.search);
+            params.set('per_page',pp.value);
+            params.set('page','1');
+            window.location.search=params.toString();
+        });
+    }
 })();
+function sortBy(field){
+    var params=new URLSearchParams(window.location.search);
+    var cur=params.get('sort')||'ts';
+    var ord=params.get('order')||'desc';
+    if(cur===field){ord=ord==='desc'?'asc':'desc';}
+    else{ord='desc';}
+    params.set('sort',field);
+    params.set('order',ord);
+    params.set('page','1');
+    window.location.search=params.toString();
+}
 </script>
 {% endblock %}

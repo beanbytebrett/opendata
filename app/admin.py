@@ -170,7 +170,15 @@ async def list_logs(request: Request):
 
 
 @router.get("/logs/{date}")
-async def view_log(request: Request, date: str, event: str = ""):
+async def view_log(
+    request: Request,
+    date: str,
+    event: str = "",
+    page: int = 1,
+    per_page: int = 50,
+    sort: str = "ts",
+    order: str = "desc",
+):
     redirect = _require_auth(request)
     if redirect:
         return redirect
@@ -188,12 +196,30 @@ async def view_log(request: Request, date: str, event: str = ""):
                 entries.append(entry)
             except Exception:
                 continue
-    entries.reverse()
+
+    # Sort
+    reverse = order == "desc"
+    entries.sort(key=lambda e: e.get(sort, ""), reverse=reverse)
+
+    # Paginate
+    per_page = max(10, min(per_page, 500))
+    page = max(1, page)
+    total = len(entries)
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page = min(page, total_pages)
+    start = (page - 1) * per_page
+    entries = entries[start:start + per_page]
 
     dates = []
     if LOGS_DIR.exists():
         for f in sorted(LOGS_DIR.glob("*.jsonl"), reverse=True):
             dates.append(f.stem)
+
+    def paginate_url(p: int) -> str:
+        params = f"?page={p}&per_page={per_page}&sort={sort}&order={order}"
+        if event:
+            params += f"&event={event}"
+        return f"/admin/logs/{date}{params}"
 
     return templates.TemplateResponse("admin_logs.html", {
         "request": request,
@@ -203,4 +229,11 @@ async def view_log(request: Request, date: str, event: str = ""):
         "event_filter": event,
         "client_ip": _get_client_ip(request),
         "is_admin": True,
+        "page": page,
+        "per_page": per_page,
+        "total": total,
+        "total_pages": total_pages,
+        "sort": sort,
+        "order": order,
+        "paginate_url": paginate_url,
     })
