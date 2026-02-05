@@ -31,12 +31,20 @@
 
             {% if entries is not none %}
             <div style="flex:1;min-width:0;">
-                <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
-                    <a href="/admin/logs/{{ selected_date }}" class="btn {% if not event_filter %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">All</a>
-                    <a href="/admin/logs/{{ selected_date }}?event=request" class="btn {% if event_filter == 'request' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">Requests</a>
-                    <a href="/admin/logs/{{ selected_date }}?event=session_start" class="btn {% if event_filter == 'session_start' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">Sessions</a>
-                    <a href="/admin/logs/{{ selected_date }}?event=form_submission" class="btn {% if event_filter == 'form_submission' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">Forms</a>
-                    <a href="/admin/logs/{{ selected_date }}?event=beacon" class="btn {% if event_filter == 'beacon' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">Beacons</a>
+                <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                    <a href="/admin/logs/{{ selected_date }}{% if status_filter %}?status={{ status_filter }}{% endif %}" class="btn {% if not event_filter %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">All</a>
+                    <a href="/admin/logs/{{ selected_date }}?event=request{% if status_filter %}&status={{ status_filter }}{% endif %}" class="btn {% if event_filter == 'request' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">Requests</a>
+                    <a href="/admin/logs/{{ selected_date }}?event=session_start{% if status_filter %}&status={{ status_filter }}{% endif %}" class="btn {% if event_filter == 'session_start' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">Sessions</a>
+                    <a href="/admin/logs/{{ selected_date }}?event=form_submission{% if status_filter %}&status={{ status_filter }}{% endif %}" class="btn {% if event_filter == 'form_submission' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">Forms</a>
+                    <a href="/admin/logs/{{ selected_date }}?event=beacon{% if status_filter %}&status={{ status_filter }}{% endif %}" class="btn {% if event_filter == 'beacon' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:6px 12px;font-size:0.8rem;">Beacons</a>
+                </div>
+                <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <span style="color:#666;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">Status:</span>
+                    <a href="/admin/logs/{{ selected_date }}{% if event_filter %}?event={{ event_filter }}{% endif %}" class="btn {% if not status_filter %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:4px 10px;font-size:0.75rem;">All</a>
+                    <a href="/admin/logs/{{ selected_date }}?status=2xx{% if event_filter %}&event={{ event_filter }}{% endif %}" class="btn {% if status_filter == '2xx' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:4px 10px;font-size:0.75rem;">2xx</a>
+                    <a href="/admin/logs/{{ selected_date }}?status=3xx{% if event_filter %}&event={{ event_filter }}{% endif %}" class="btn {% if status_filter == '3xx' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:4px 10px;font-size:0.75rem;">3xx</a>
+                    <a href="/admin/logs/{{ selected_date }}?status=4xx{% if event_filter %}&event={{ event_filter }}{% endif %}" class="btn {% if status_filter == '4xx' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:4px 10px;font-size:0.75rem;">4xx</a>
+                    <a href="/admin/logs/{{ selected_date }}?status=5xx{% if event_filter %}&event={{ event_filter }}{% endif %}" class="btn {% if status_filter == '5xx' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding:4px 10px;font-size:0.75rem;">5xx</a>
                 </div>
 
                 <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
@@ -59,7 +67,7 @@
                     <table style="width:100%;border-collapse:collapse;">
                         <thead>
                             <tr style="border-bottom:1px solid #333;text-align:left;">
-                                {% for col, field in [('Time', 'ts'), ('Event', 'event'), ('IP', 'ip')] %}
+                                {% for col, field in [('Time', 'ts'), ('Event', 'event'), ('Status', 'status'), ('IP', 'ip')] %}
                                 <th style="padding:8px 10px;color:#888;font-size:0.75rem;font-weight:500;cursor:pointer;user-select:none;white-space:nowrap;" onclick="sortBy('{{ field }}')">
                                     {{ col }}{% if sort == field %} {{ '▲' if order == 'asc' else '▼' }}{% endif %}
                                 </th>
@@ -72,10 +80,11 @@
                             <tr data-ip="{{ e.ip | default('') }}" style="border-bottom:1px solid #1a1a1a;cursor:pointer;" onclick="var d=this.nextElementSibling;d.style.display=d.style.display==='none'?'table-row':'none'">
                                 <td style="padding:8px 10px;font-size:0.8rem;color:#aaa;white-space:nowrap;font-family:monospace;">{{ e.iso[11:19] if e.iso else '' }}</td>
                                 <td style="padding:8px 10px;font-size:0.8rem;"><span style="background:#1a1a1a;border:1px solid #333;border-radius:4px;padding:2px 8px;font-size:0.75rem;color:#60a5fa;">{{ e.event }}</span></td>
+                                <td style="padding:8px 10px;font-size:0.8rem;font-family:monospace;">{% if e.status %}<span style="{% if e.status >= 500 %}color:#ef4444;{% elif e.status >= 400 %}color:#f59e0b;{% elif e.status >= 300 %}color:#8b5cf6;{% else %}color:#22c55e;{% endif %}">{{ e.status }}</span>{% else %}<span style="color:#444;">—</span>{% endif %}</td>
                                 <td style="padding:8px 10px;font-size:0.8rem;color:#666;font-family:monospace;">{{ e.ip | default('') }}</td>
                                 <td style="padding:8px 10px;font-size:0.8rem;color:#aaa;">
                                     {% if e.event == 'request' %}
-                                        <span style="color:#e0e0e0;">{{ e.method }} {{ e.path }}</span> <span style="color:#666;">{{ e.status }} &middot; {{ e.duration_ms }}ms</span>
+                                        <span style="color:#e0e0e0;">{{ e.method }} {{ e.path }}</span> <span style="color:#666;">{{ e.duration_ms }}ms</span>
                                     {% elif e.event == 'form_submission' %}
                                         <span style="color:#e0e0e0;">{{ e.form }}</span> <span style="color:#666;">&middot; {{ e.fields.full_name or e.fields.contact_name or '' }}</span>
                                     {% elif e.event == 'session_start' %}
@@ -88,7 +97,7 @@
                                 </td>
                             </tr>
                             <tr style="display:none;">
-                                <td colspan="4" style="padding:0 10px 12px;"><pre style="background:#111;border:1px solid #222;border-radius:6px;padding:16px;overflow-x:auto;font-size:0.8rem;color:#aaa;line-height:1.5;margin:4px 0 0;">{{ e | tojson(indent=2) }}</pre></td>
+                                <td colspan="5" style="padding:0 10px 12px;"><pre style="background:#111;border:1px solid #222;border-radius:6px;padding:16px;overflow-x:auto;font-size:0.8rem;color:#aaa;line-height:1.5;margin:4px 0 0;">{{ e | tojson(indent=2) }}</pre></td>
                             </tr>
                             {% endfor %}
                         </tbody>

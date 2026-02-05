@@ -1,7 +1,9 @@
+import gzip
 import hashlib
 import hmac
 import json
 import time
+from datetime import date
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import RedirectResponse
@@ -147,16 +149,41 @@ async def view_submission(request: Request, filename: str):
 
 # ---- Logs ----
 
+def _get_log_dates() -> list[str]:
+    """Get sorted list of available log dates (handles both .jsonl and .jsonl.gz)."""
+    dates = set()
+    if LOGS_DIR.exists():
+        for f in LOGS_DIR.glob("*.jsonl"):
+            dates.add(f.stem)
+        for f in LOGS_DIR.glob("*.jsonl.gz"):
+            dates.add(f.stem.replace(".jsonl", ""))
+    return sorted(dates, reverse=True)
+
+
+def _read_log_file(log_date: str) -> str | None:
+    """Read log file content, trying uncompressed first, then compressed."""
+    jsonl_path = LOGS_DIR / f"{log_date}.jsonl"
+    gz_path = LOGS_DIR / f"{log_date}.jsonl.gz"
+
+    if jsonl_path.exists():
+        return jsonl_path.read_text()
+    elif gz_path.exists():
+        with gzip.open(gz_path, "rt", encoding="utf-8") as f:
+            return f.read()
+    return None
+
+
 @router.get("/logs")
 async def list_logs(request: Request):
     redirect = _require_auth(request)
     if redirect:
         return redirect
 
-    dates = []
-    if LOGS_DIR.exists():
-        for f in sorted(LOGS_DIR.glob("*.jsonl"), reverse=True):
-            dates.append(f.stem)
+    today = date.today().isoformat()
+    if (LOGS_DIR / f"{today}.jsonl").exists():
+        return RedirectResponse(f"/admin/logs/{today}", status_code=303)
+
+    dates = _get_log_dates()
 
     return templates.TemplateResponse("admin_logs.html", {
         "request": request,
@@ -164,6 +191,7 @@ async def list_logs(request: Request):
         "entries": None,
         "selected_date": None,
         "event_filter": "",
+        "status_filter": "",
         "client_ip": _get_client_ip(request),
         "is_admin": True,
     })
@@ -174,6 +202,7 @@ async def view_log(
     request: Request,
     date: str,
     event: str = "",
+    status: str = "",
     page: int = 1,
     per_page: int = 50,
     sort: str = "ts",
@@ -183,16 +212,22 @@ async def view_log(
     if redirect:
         return redirect
 
-    logfile = LOGS_DIR / f"{date}.jsonl"
     entries = []
-    if logfile.exists():
-        for line in logfile.read_text().strip().split("\n"):
+    log_content = _read_log_file(date)
+    if log_content:
+        for line in log_content.strip().split("\n"):
             if not line:
                 continue
             try:
                 entry = json.loads(line)
                 if event and entry.get("event") != event:
                     continue
+                if status:
+                    entry_status = entry.get("status")
+                    if entry_status is None:
+                        continue
+                    if not str(entry_status).startswith(status[0]):
+                        continue
                 entries.append(entry)
             except Exception:
                 continue
@@ -210,15 +245,14 @@ async def view_log(
     start = (page - 1) * per_page
     entries = entries[start:start + per_page]
 
-    dates = []
-    if LOGS_DIR.exists():
-        for f in sorted(LOGS_DIR.glob("*.jsonl"), reverse=True):
-            dates.append(f.stem)
+    dates = _get_log_dates()
 
     def paginate_url(p: int) -> str:
         params = f"?page={p}&per_page={per_page}&sort={sort}&order={order}"
         if event:
             params += f"&event={event}"
+        if status:
+            params += f"&status={status}"
         return f"/admin/logs/{date}{params}"
 
     return templates.TemplateResponse("admin_logs.html", {
@@ -227,6 +261,7 @@ async def view_log(
         "entries": entries,
         "selected_date": date,
         "event_filter": event,
+        "status_filter": status,
         "client_ip": _get_client_ip(request),
         "is_admin": True,
         "page": page,

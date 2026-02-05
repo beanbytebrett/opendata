@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.admin import router as admin_router
-from app.telemetry import TelemetryMiddleware, handle_beacon, log_form_submission
+from app.telemetry import TelemetryMiddleware, handle_beacon, log_form_submission, maintain_logs
 
 app = FastAPI(title="OpenData Exchange", docs_url=None, redoc_url=None)
 app.include_router(admin_router)
@@ -110,8 +110,9 @@ datasets = DatasetStore(public_data_dir)
 
 
 @app.on_event("startup")
-async def _load_datasets():
+async def _startup():
     datasets.scan()
+    maintain_logs()  # Compress old logs, delete expired logs
 
 
 # ---- Page routes ----
