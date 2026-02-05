@@ -85,6 +85,19 @@ git config core.sshCommand "ssh -i /Users/brett/code/beanbytebrett/.ssh/id_ed255
 - **Domain**: `opendata.rest`
 - **Deployment**: Push to `main` triggers GitHub Actions webhook to Dokploy
 - **SSL**: Let's Encrypt via Dokploy/Traefik
+- **Volumes**: `docker-compose.yml` defines named volumes for persistent data
+
+### Persistent Volumes
+
+Data persists across deployments via named Docker volumes defined in `docker-compose.yml`:
+
+| Volume | Path | Contents |
+|--------|------|----------|
+| `submissions` | `/app/data/submissions` | Form submission JSON files |
+| `logs` | `/app/data/logs` | Request/event JSONL logs |
+| `public` | `/app/data/public` | Parquet datasets served by API |
+
+Dokploy should be configured to use docker-compose for deployment to ensure volumes persist.
 
 ### Environment Variables
 
